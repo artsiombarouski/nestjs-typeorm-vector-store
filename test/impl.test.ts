@@ -1,7 +1,10 @@
 import {
   Column,
   DataSource,
+  DeepPartial,
   Entity,
+  JoinTable,
+  ManyToMany,
   PrimaryGeneratedColumn,
   Repository,
 } from 'typeorm';
@@ -33,6 +36,15 @@ class TestEntity {
 }
 
 @Entity()
+class RelationEntity {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  title: string;
+}
+
+@Entity()
 class TestEntityWithTransform {
   @PrimaryGeneratedColumn()
   id: number;
@@ -61,11 +73,31 @@ class TestEntityWithTransform {
 
   @Column({ default: 'notEmbedding' })
   notEmbedding: string;
+
+  @EmbeddingColumn({
+    transform: (value: RelationEntity[] | undefined | null) => {
+      if (!value) {
+        return;
+      }
+      return `Rel: ${value.map((e) => e.title).join(', ')}`;
+    },
+  })
+  @ManyToMany(() => RelationEntity, {
+    eager: true,
+  })
+  @JoinTable({
+    name: 'rel_rel_test_with_transform',
+  })
+  relations: RelationEntity[];
 }
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TestEntity, TestEntityWithTransform]),
+    TypeOrmModule.forFeature([
+      TestEntity,
+      RelationEntity,
+      TestEntityWithTransform,
+    ]),
     TypeormVectorStoreModule.forFeature('test_entity_vectors', {
       trackingEntity: TestEntity,
     }),
@@ -87,7 +119,7 @@ class TestEntityModule {}
       password: 'postgres_test',
       logging: false,
       synchronize: true,
-      entities: [TestEntity, TestEntityWithTransform],
+      entities: [TestEntity, RelationEntity, TestEntityWithTransform],
     }),
     TypeormVectorStoreModule.forRoot({
       embedding: new FakeEmbeddings(),
@@ -176,12 +208,16 @@ describe('TypeOrmVectorStore impl', () => {
   });
 
   it('with transform', async () => {
-    const entityDto: Partial<TestEntityWithTransform> = {
+    const relationEntities = await app
+      .get<Repository<RelationEntity>>(getRepositoryToken(RelationEntity))
+      .save([{ title: 'rel1' }, { title: 'rel2' }]);
+    const entityDto: DeepPartial<TestEntityWithTransform> = {
       text: 'text',
       jsonObject: {
         key1: 'key1',
         key2: 'key2',
       },
+      relations: [{ id: relationEntities[0].id }],
     };
     const repo: Repository<TestEntityWithTransform> = await moduleRef.get(
       getRepositoryToken(TestEntityWithTransform),
@@ -202,7 +238,7 @@ describe('TypeOrmVectorStore impl', () => {
     ).toMatchObject({
       pageContent: `transformed text: text transformed: ${JSON.stringify(
         entityDto.jsonObject,
-      )}`,
+      )} Rel: ${relationEntities[0].title}`,
     });
   });
 });

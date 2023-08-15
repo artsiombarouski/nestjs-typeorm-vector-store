@@ -9,6 +9,7 @@ import {
 import { TypeormVectorStoreModuleOptions } from './interfaces/typeorm-vector-store-options.interface';
 import {
   DataSource,
+  EntityManager,
   EntitySubscriberInterface,
   EventSubscriber,
   InsertEvent,
@@ -111,7 +112,7 @@ export class TypeormVectorStoreModule {
       return `${value}`;
     };
 
-    const buildPageContent = (entity: any) => {
+    const buildPageContentWithEntity = (entity: any) => {
       let pageLines = [];
       trackingColumnNames.forEach((columnName) => {
         const options = trackingColumnOptions[columnName];
@@ -124,10 +125,23 @@ export class TypeormVectorStoreModule {
       return pageLines.join(' ');
     };
 
+    const buildPageContent = async (manager: EntityManager, entityId: any) => {
+      const entity = await manager.findOne(trackingEntity, {
+        where: { id: entityId },
+        relations: manager
+          .getRepository(trackingEntity)
+          .metadata.relations.filter((e) =>
+            trackingColumnNames.includes(e.propertyName),
+          )
+          .map((e) => e.propertyName),
+      });
+      return buildPageContentWithEntity(entity);
+    };
+
     @EventSubscriber()
     class Subscriber implements EntitySubscriberInterface {
       constructor(
-        dataSource: DataSource,
+        readonly dataSource: DataSource,
         @Inject(`vector_store_${tableName}`)
         readonly vectorStore: TypeOrmVectorStore,
       ) {
@@ -145,7 +159,10 @@ export class TypeormVectorStoreModule {
         if (haveTrackingColumn) {
           await this.vectorStore.upsertDocuments([
             {
-              pageContent: buildPageContent(event.entity),
+              pageContent: await buildPageContent(
+                event.manager,
+                event.entity.id,
+              ),
               metadata: { id: event.entity.id },
             },
           ]);
@@ -162,10 +179,10 @@ export class TypeormVectorStoreModule {
         if (haveTrackingColumns) {
           await this.vectorStore.upsertDocuments([
             {
-              pageContent: buildPageContent({
-                ...event.databaseEntity,
-                ...event.entity,
-              }),
+              pageContent: await buildPageContent(
+                event.manager,
+                event.databaseEntity.id,
+              ),
               metadata: { id: event.entity.id },
             },
           ]);
@@ -198,10 +215,13 @@ export class TypeormVectorStoreModule {
                   `SELECT metadata->>'id' as id FROM ${this.vector.tableName}`,
                 ),
               },
+              relations: this.repo.metadata.relations
+                .filter((e) => trackingColumnNames.includes(e.propertyName))
+                .map((e) => e.propertyName),
             })
             .then(async (results) => {
               const documents = results.map((entity) => ({
-                pageContent: buildPageContent(entity),
+                pageContent: buildPageContentWithEntity(entity),
                 metadata: { id: entity.id },
               }));
               await this.vector.upsertDocuments(documents);
