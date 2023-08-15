@@ -8,9 +8,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rimraf dist && tsc",
-    "prepublish": "npm run build",
-    "ci:bootstrap": "npx lerna bootstrap --no-private",
-    "ci:publish": "npm run build && lerna publish from-package --yes --no-verify-access --loglevel silly"
+    "prepublish": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/artsiombarouski/nestjs-typeorm-vector-store.git",
+    "directory": "./"
   },
   "author": "",
   "license": "ISC",
@@ -45,8 +48,7 @@
     "ts-jest": "28.0.1",
     "ts-loader": "^9.2.3",
     "ts-node": "^10.0.0",
-    "pg": "^8.11.2",
-    "lerna": "^6.6.2"
+    "pg": "^8.11.2"
   },
   "jest": {
     "moduleFileExtensions": [
