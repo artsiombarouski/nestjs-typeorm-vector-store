@@ -1,0 +1,6 @@
+docker-compose.test.yml
+test
+.github
+.prettierignore
+.prettierrc
+tsconfig.json
