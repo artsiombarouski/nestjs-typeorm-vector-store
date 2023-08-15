@@ -18,7 +18,8 @@ export class TypeormVectorStoreCoreModule {
     return {
       module: TypeormVectorStoreCoreModule,
       providers: [optionsProvider],
-      exports: [TYPEORM_VECTOR_STORE_MODULE_OPTIONS],
+      exports: [optionsProvider],
+      global: true,
     };
   }
 }

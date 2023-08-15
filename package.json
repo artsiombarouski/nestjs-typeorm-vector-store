@@ -1,7 +1,7 @@
 {
   "name": "@artsiombarouski/nestjs-typeorm-vector-store",
-  "version": "0.0.4",
-  "description": "Vectorstore wrapper for nestjs",
+  "version": "0.0.5",
+  "description": "Vector Store wrapper for nestjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

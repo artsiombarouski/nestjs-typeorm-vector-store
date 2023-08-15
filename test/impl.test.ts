@@ -76,10 +76,16 @@ class TestEntityWithTransform {
       synchronize: true,
       entities: [TestEntity, TestEntityWithTransform],
     }),
-    TypeOrmModule.forFeature([TestEntity, TestEntityWithTransform]),
     TypeormVectorStoreModule.forRoot({
       embedding: new FakeEmbeddings(),
     }),
+  ],
+})
+class TestModule {}
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([TestEntity, TestEntityWithTransform]),
     TypeormVectorStoreModule.forFeature('test_entity_vectors', {
       trackingEntity: TestEntity,
     }),
@@ -88,7 +94,7 @@ class TestEntityWithTransform {
     }),
   ],
 })
-class TestModule {}
+class TestEntityModule {}
 
 describe('TypeOrmVectorStore impl', () => {
   let app: INestApplication;
@@ -108,7 +114,7 @@ describe('TypeOrmVectorStore impl', () => {
     await dataSource.dropDatabase();
 
     moduleRef = await Test.createTestingModule({
-      imports: [TestModule],
+      imports: [TestModule, TestEntityModule],
     }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
