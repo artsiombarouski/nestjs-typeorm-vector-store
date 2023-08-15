@@ -1,0 +1,20 @@
+version: "3"
+services:
+  felt_therapy_test_database:
+    image: ankane/pgvector
+    container_name: 'vector_store_test_database'
+    restart: always
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_USER=postgres_test
+      - POSTGRES_PASSWORD=postgres_test
+      - POSTGRES_DB=postgres_test
+    volumes:
+      - ./postgres-test:/var/lib/postgresql/data
+    networks:
+      - joplin
+
+networks:
+  joplin:
+    driver: bridge
