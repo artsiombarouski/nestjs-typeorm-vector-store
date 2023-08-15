@@ -1,6 +1,5 @@
 import {
   DynamicModule,
-  Global,
   Inject,
   Injectable,
   Module,
@@ -26,24 +25,14 @@ import { getDataSourceToken, InjectRepository } from '@nestjs/typeorm';
 import { TypeOrmVectorStore } from './typeorm-vector-store';
 import { EmbeddingColumnOptions } from './decorators/embedding-column.decorator';
 import { InjectVectorStore } from './decorators/inject-vector-store.decorator';
+import { TypeormVectorStoreCoreModule } from './typeorm-vector-store-core.module';
 
-@Global()
 @Module({})
 export class TypeormVectorStoreModule {
-  constructor(
-    @Inject(TYPEORM_VECTOR_STORE_MODULE_OPTIONS)
-    private readonly options: TypeormVectorStoreModuleOptions,
-  ) {}
-
   static forRoot(options?: TypeormVectorStoreModuleOptions): DynamicModule {
-    const optionsProvider = {
-      provide: TYPEORM_VECTOR_STORE_MODULE_OPTIONS,
-      useValue: options,
-    };
     return {
       module: TypeormVectorStoreModule,
-      providers: [optionsProvider],
-      exports: [TYPEORM_VECTOR_STORE_MODULE_OPTIONS],
+      imports: [TypeormVectorStoreCoreModule.forRoot(options)],
     };
   }
 
