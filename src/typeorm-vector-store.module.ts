@@ -16,11 +16,7 @@ import {
   Repository,
   UpdateEvent,
 } from 'typeorm';
-import {
-  TYPEORM_VECTOR_STORE_MODULE_OPTIONS,
-  VECTOR_FIELDS_METADATA_KEY,
-  VECTOR_METADATA_KEY,
-} from './constants';
+import { VECTOR_FIELDS_METADATA_KEY, VECTOR_METADATA_KEY } from './constants';
 import { getDataSourceToken, InjectRepository } from '@nestjs/typeorm';
 import { TypeOrmVectorStore } from './typeorm-vector-store';
 import { EmbeddingColumnOptions } from './decorators/embedding-column.decorator';
@@ -64,22 +60,22 @@ export class TypeormVectorStoreModule {
     return {
       provide: `vector_store_${tableName}`,
       inject: [
-        TYPEORM_VECTOR_STORE_MODULE_OPTIONS,
+        TypeormVectorStoreCoreModule,
         getDataSourceToken(options.connectionOptions),
       ],
       useFactory: async (
-        injectedOptions: TypeormVectorStoreModuleOptions,
+        coreModule: TypeormVectorStoreCoreModule,
         dataSource: DataSource,
       ) => {
         return await TypeOrmVectorStore.fromDataSource(
-          options.embedding ?? injectedOptions.embedding,
+          options.embedding ?? coreModule.options?.embedding,
           {
-            ...injectedOptions,
+            ...coreModule.options,
             ...options,
             tableName: tableName,
             connectionOptions:
               options?.connectionOptions ??
-              injectedOptions?.connectionOptions ??
+              coreModule.options?.connectionOptions ??
               dataSource.options,
           },
         );

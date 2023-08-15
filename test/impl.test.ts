@@ -65,6 +65,19 @@ class TestEntityWithTransform {
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([TestEntity, TestEntityWithTransform]),
+    TypeormVectorStoreModule.forFeature('test_entity_vectors', {
+      trackingEntity: TestEntity,
+    }),
+    TypeormVectorStoreModule.forFeature('test_entity_with_transform_vectors', {
+      trackingEntity: TestEntityWithTransform,
+    }),
+  ],
+})
+class TestEntityModule {}
+
+@Module({
+  imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: 'localhost',
@@ -79,22 +92,10 @@ class TestEntityWithTransform {
     TypeormVectorStoreModule.forRoot({
       embedding: new FakeEmbeddings(),
     }),
+    TestEntityModule,
   ],
 })
 class TestModule {}
-
-@Module({
-  imports: [
-    TypeOrmModule.forFeature([TestEntity, TestEntityWithTransform]),
-    TypeormVectorStoreModule.forFeature('test_entity_vectors', {
-      trackingEntity: TestEntity,
-    }),
-    TypeormVectorStoreModule.forFeature('test_entity_with_transform_vectors', {
-      trackingEntity: TestEntityWithTransform,
-    }),
-  ],
-})
-class TestEntityModule {}
 
 describe('TypeOrmVectorStore impl', () => {
   let app: INestApplication;
@@ -114,7 +115,7 @@ describe('TypeOrmVectorStore impl', () => {
     await dataSource.dropDatabase();
 
     moduleRef = await Test.createTestingModule({
-      imports: [TestModule, TestEntityModule],
+      imports: [TestModule],
     }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
