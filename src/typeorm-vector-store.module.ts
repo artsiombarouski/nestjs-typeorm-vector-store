@@ -17,12 +17,17 @@ import {
   Repository,
   UpdateEvent,
 } from 'typeorm';
-import { VECTOR_FIELDS_METADATA_KEY, VECTOR_METADATA_KEY } from './constants';
+import {
+  VECTOR_FIELDS_METADATA_KEY,
+  VECTOR_META_COLUMN_METADATA_KEY,
+  VECTOR_METADATA_KEY,
+} from './constants';
 import { getDataSourceToken, InjectRepository } from '@nestjs/typeorm';
 import { TypeOrmVectorStore } from './typeorm-vector-store';
 import { EmbeddingColumnOptions } from './decorators/embedding-column.decorator';
 import { InjectVectorStore } from './decorators/inject-vector-store.decorator';
 import { TypeormVectorStoreCoreModule } from './typeorm-vector-store-core.module';
+import { VectorMetaColumnOptions } from './decorators/vector-meta-column';
 
 @Module({})
 export class TypeormVectorStoreModule {
@@ -102,6 +107,20 @@ export class TypeormVectorStoreModule {
       );
     });
 
+    const metadataColumnNames: string[] = Reflect.getMetadata(
+      VECTOR_META_COLUMN_METADATA_KEY,
+      trackingEntity.prototype,
+    );
+    const metadataColumnOptions: { [key: string]: VectorMetaColumnOptions } =
+      {};
+    trackingColumnNames.forEach((columnName) => {
+      trackingColumnOptions[columnName] = Reflect.getMetadata(
+        VECTOR_METADATA_KEY,
+        trackingEntity.prototype,
+        columnName,
+      );
+    });
+
     const defaultTransform = (value: any) => {
       if (!value) {
         return undefined;
@@ -125,7 +144,22 @@ export class TypeormVectorStoreModule {
       return pageLines.join(' ');
     };
 
-    const buildPageContent = async (manager: EntityManager, entityId: any) => {
+    const buildDocumentMetadataWithEntity = (entity: any) => {
+      const result = { id: entity.id };
+      metadataColumnNames?.forEach((columnName) => {
+        result[columnName] = entity[columnName];
+      });
+      return result;
+    };
+
+    const buildDocumentWithEntity = (entity: any) => {
+      return {
+        pageContent: buildPageContentWithEntity(entity),
+        metadata: buildDocumentMetadataWithEntity(entity),
+      };
+    };
+
+    const buildDocument = async (manager: EntityManager, entityId: any) => {
       const entity = await manager.findOne(trackingEntity, {
         where: { id: entityId },
         relations: manager
@@ -135,7 +169,7 @@ export class TypeormVectorStoreModule {
           )
           .map((e) => e.propertyName),
       });
-      return buildPageContentWithEntity(entity);
+      return buildDocumentWithEntity(entity);
     };
 
     @EventSubscriber()
@@ -158,13 +192,7 @@ export class TypeormVectorStoreModule {
         });
         if (haveTrackingColumn) {
           await this.vectorStore.upsertDocuments([
-            {
-              pageContent: await buildPageContent(
-                event.manager,
-                event.entity.id,
-              ),
-              metadata: { id: event.entity.id },
-            },
+            await buildDocument(event.manager, event.entity.id),
           ]);
         }
       }
@@ -176,15 +204,16 @@ export class TypeormVectorStoreModule {
         const haveTrackingColumns = trackingColumnNames.some((column) => {
           return event.updatedColumns.some((e) => e.propertyName === column);
         });
+        const haveMetadataColumns = metadataColumnNames.some((column) => {
+          return event.updatedColumns.some((e) => e.propertyName === column);
+        });
         if (haveTrackingColumns) {
           await this.vectorStore.upsertDocuments([
-            {
-              pageContent: await buildPageContent(
-                event.manager,
-                event.databaseEntity.id,
-              ),
-              metadata: { id: event.entity.id },
-            },
+            await buildDocument(event.manager, event.databaseEntity.id),
+          ]);
+        } else if (haveMetadataColumns) {
+          await this.vectorStore.upsertDocuments([
+            await buildDocument(event.manager, event.databaseEntity.id),
           ]);
         }
       }

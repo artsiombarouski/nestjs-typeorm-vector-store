@@ -14,6 +14,7 @@ import {
   EmbeddingColumn,
   TypeOrmVectorStore,
   TypeormVectorStoreModule,
+  VectorMetaColumn,
 } from '../src';
 import { FakeEmbeddings } from 'langchain/embeddings/fake';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -33,6 +34,10 @@ class TestEntity {
 
   @Column({ default: 'notEmbedding' })
   notEmbedding: string;
+
+  @Column()
+  @VectorMetaColumn()
+  optional: string;
 }
 
 @Entity()
@@ -156,6 +161,7 @@ describe('TypeOrmVectorStore impl', () => {
   it('smoke', async () => {
     const entityDto: Partial<TestEntity> = {
       text: 'test text',
+      optional: 'v optional',
       jsonObject: {
         key1: 'key1',
         key2: 'key2',
@@ -179,10 +185,12 @@ describe('TypeOrmVectorStore impl', () => {
         .then((res) => res[0]),
     ).toMatchObject({
       pageContent: `test text ${JSON.stringify(entityDto.jsonObject)}`,
+      metadata: { id: entity.id, optional: 'v optional' },
     });
 
     // Updating
     await repo.save({ id: entity.id, text: 'updated' });
+    await repo.save({ id: entity.id, optional: 'v optional updated' });
     await repo.save({ id: entity.id, notEmbedding: 'not embedding updated' });
     expect(
       await store.dataSource.getRepository(store.documentEntity).count(),
@@ -194,17 +202,49 @@ describe('TypeOrmVectorStore impl', () => {
         .then((res) => res[0]),
     ).toMatchObject({
       pageContent: `updated ${JSON.stringify(entityDto.jsonObject)}`,
+      metadata: { id: entity.id, optional: 'v optional updated' },
     });
 
     // Adding second
-    await repo.save({
+    const secondEntity = await repo.save({
       text: 'second text',
+      optional: 'v optional 2',
       jsonObject: { key1: 'test key 1' },
     });
 
     expect(
       await store.dataSource.getRepository(store.documentEntity).count(),
     ).toEqual(2);
+
+    // Search by metadata
+    expect(
+      await store.findDocuments([
+        {
+          optional: 'v optional updated',
+        },
+      ]),
+    ).toMatchObject([
+      {
+        metadata: {
+          id: entity.id,
+          optional: 'v optional updated',
+        },
+      },
+    ]);
+    expect(
+      await store.findDocuments([
+        {
+          optional: 'v optional 2',
+        },
+      ]),
+    ).toMatchObject([
+      {
+        metadata: {
+          id: secondEntity.id,
+          optional: 'v optional 2',
+        },
+      },
+    ]);
   });
 
   it('with transform', async () => {

@@ -13,6 +13,7 @@ export type TypeOrmVectorStoreOptions = {
   filter?: TypeOrmVectorFilterType;
   chunkSize?: number;
   version?: string;
+  documentPrimaryKey?: string;
 };
 
 export class TypeOrmVectorDocument extends Document {
@@ -30,6 +31,7 @@ export class TypeOrmVectorStore extends VectorStore {
 
   readonly tableName: string;
   readonly version: string;
+  readonly documentPrimaryKey: string;
   readonly dataSource: DataSource;
   readonly documentEntity: EntitySchema<TypeOrmVectorDocument>;
   readonly filter: this['FilterType'];
@@ -46,6 +48,7 @@ export class TypeOrmVectorStore extends VectorStore {
     super(embeddings, options);
     this.tableName = options.tableName ?? 'document_vectors';
     this.version = options.version ?? '1';
+    this.documentPrimaryKey = options.documentPrimaryKey ?? 'id';
     this.documentEntity = new EntitySchema<TypeOrmVectorDocument>({
       name: this.tableName,
       columns: {
@@ -103,7 +106,12 @@ export class TypeOrmVectorStore extends VectorStore {
     let result = documents;
 
     const where = documents
-      .map((e) => `metadata @> '${JSON.stringify(e.metadata)}'`)
+      .map(
+        (e) =>
+          `metadata ->> '${this.documentPrimaryKey}'='${
+            e.metadata[this.documentPrimaryKey]
+          }'`,
+      )
       .join(' OR ');
 
     const queryString = `
@@ -118,13 +126,18 @@ export class TypeOrmVectorStore extends VectorStore {
     if (existsDocuments.length > 0) {
       const idsToRemove = [];
       result = documents.filter((inputDocument) => {
-        const existingDocument = existsDocuments.find((e) =>
-          isMatch(e.metadata, inputDocument.metadata),
+        const existingDocument = existsDocuments.find(
+          (e) =>
+            e.metadata[this.documentPrimaryKey] ===
+            inputDocument.metadata[this.documentPrimaryKey],
         );
         if (!existingDocument) {
           return true;
         }
-        if (!isEqual(existingDocument.pageContent, inputDocument.pageContent)) {
+        if (
+          !isMatch(existingDocument.metadata, inputDocument.metadata) ||
+          !isEqual(existingDocument.pageContent, inputDocument.pageContent)
+        ) {
           idsToRemove.push(existingDocument.id);
           return true;
         }
@@ -158,7 +171,12 @@ export class TypeOrmVectorStore extends VectorStore {
 
   async deleteDocuments(filters: this['FilterType'][]): Promise<void> {
     const where = filters
-      .map((e) => `metadata @> '${JSON.stringify(e)}'`)
+      .map(
+        (e) =>
+          `metadata ->> '${this.documentPrimaryKey}'='${
+            e.metadata[this.documentPrimaryKey]
+          }'`,
+      )
       .join(' OR ');
 
     const queryString = `
