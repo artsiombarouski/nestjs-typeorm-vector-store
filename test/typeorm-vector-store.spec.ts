@@ -17,6 +17,7 @@ describe('TypeOrmVectorStore', () => {
         logging: false,
         synchronize: false,
       },
+      documentPrimaryKey: 'key',
     });
   });
 

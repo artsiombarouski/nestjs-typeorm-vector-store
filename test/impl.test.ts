@@ -38,6 +38,14 @@ class TestEntity {
   @Column()
   @VectorMetaColumn()
   optional: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  @VectorMetaColumn({
+    transform: (value) => {
+      return value?.inner;
+    },
+  })
+  optionalTransform: object;
 }
 
 @Entity()
@@ -210,6 +218,7 @@ describe('TypeOrmVectorStore impl', () => {
       text: 'second text',
       optional: 'v optional 2',
       jsonObject: { key1: 'test key 1' },
+      optionalTransform: { inner: 'inner value' },
     });
 
     expect(
@@ -242,6 +251,7 @@ describe('TypeOrmVectorStore impl', () => {
         metadata: {
           id: secondEntity.id,
           optional: 'v optional 2',
+          optionalTransform: 'inner value',
         },
       },
     ]);

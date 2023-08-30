@@ -174,7 +174,7 @@ export class TypeOrmVectorStore extends VectorStore {
       .map(
         (e) =>
           `metadata ->> '${this.documentPrimaryKey}'='${
-            e.metadata[this.documentPrimaryKey]
+            e[this.documentPrimaryKey]
           }'`,
       )
       .join(' OR ');

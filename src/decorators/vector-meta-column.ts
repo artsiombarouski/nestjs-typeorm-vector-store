@@ -1,6 +1,6 @@
 import {
   VECTOR_META_COLUMN_METADATA_KEY,
-  VECTOR_METADATA_KEY,
+  VECTOR_META_COLUMN_REFLECT_KEY,
 } from '../constants';
 
 export type VectorMetaColumnOptions<ValueType = any> = {
@@ -12,13 +12,18 @@ export function VectorMetaColumn(
 ): PropertyDecorator {
   return (target, propertyKey: string | symbol) => {
     Reflect.defineMetadata(
-      VECTOR_META_COLUMN_METADATA_KEY,
+      VECTOR_META_COLUMN_REFLECT_KEY,
       [
-        ...(Reflect.getMetadata(VECTOR_META_COLUMN_METADATA_KEY, target) ?? []),
+        ...(Reflect.getMetadata(VECTOR_META_COLUMN_REFLECT_KEY, target) ?? []),
         propertyKey,
       ],
       target,
     );
-    Reflect.defineMetadata(VECTOR_METADATA_KEY, options, target, propertyKey);
+    Reflect.defineMetadata(
+      VECTOR_META_COLUMN_METADATA_KEY,
+      options,
+      target,
+      propertyKey,
+    );
   };
 }

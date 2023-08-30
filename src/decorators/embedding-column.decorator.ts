@@ -1,4 +1,7 @@
-import { VECTOR_FIELDS_METADATA_KEY, VECTOR_METADATA_KEY } from '../constants';
+import {
+  VECTOR_EMBEDDING_COLUMN_METADATA_KEY,
+  VECTOR_EMBEDDING_COLUMN_REFLECT_KEY,
+} from '../constants';
 
 export type EmbeddingColumnOptions<ValueType = any> = {
   transform?: (value?: ValueType) => string;
@@ -9,13 +12,19 @@ export function EmbeddingColumn(
 ): PropertyDecorator {
   return (target, propertyKey: string | symbol) => {
     Reflect.defineMetadata(
-      VECTOR_FIELDS_METADATA_KEY,
+      VECTOR_EMBEDDING_COLUMN_REFLECT_KEY,
       [
-        ...(Reflect.getMetadata(VECTOR_FIELDS_METADATA_KEY, target) ?? []),
+        ...(Reflect.getMetadata(VECTOR_EMBEDDING_COLUMN_REFLECT_KEY, target) ??
+          []),
         propertyKey,
       ],
       target,
     );
-    Reflect.defineMetadata(VECTOR_METADATA_KEY, options, target, propertyKey);
+    Reflect.defineMetadata(
+      VECTOR_EMBEDDING_COLUMN_METADATA_KEY,
+      options,
+      target,
+      propertyKey,
+    );
   };
 }

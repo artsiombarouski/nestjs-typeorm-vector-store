@@ -18,9 +18,10 @@ import {
   UpdateEvent,
 } from 'typeorm';
 import {
-  VECTOR_FIELDS_METADATA_KEY,
+  VECTOR_EMBEDDING_COLUMN_METADATA_KEY,
+  VECTOR_EMBEDDING_COLUMN_REFLECT_KEY,
   VECTOR_META_COLUMN_METADATA_KEY,
-  VECTOR_METADATA_KEY,
+  VECTOR_META_COLUMN_REFLECT_KEY,
 } from './constants';
 import { getDataSourceToken, InjectRepository } from '@nestjs/typeorm';
 import { TypeOrmVectorStore } from './typeorm-vector-store';
@@ -95,27 +96,27 @@ export class TypeormVectorStoreModule {
     autoMigration: boolean = false,
   ): Provider[] => {
     const trackingColumnNames: string[] = Reflect.getMetadata(
-      VECTOR_FIELDS_METADATA_KEY,
+      VECTOR_EMBEDDING_COLUMN_REFLECT_KEY,
       trackingEntity.prototype,
     );
     const trackingColumnOptions: { [key: string]: EmbeddingColumnOptions } = {};
-    trackingColumnNames.forEach((columnName) => {
+    trackingColumnNames?.forEach((columnName) => {
       trackingColumnOptions[columnName] = Reflect.getMetadata(
-        VECTOR_METADATA_KEY,
+        VECTOR_EMBEDDING_COLUMN_METADATA_KEY,
         trackingEntity.prototype,
         columnName,
       );
     });
 
     const metadataColumnNames: string[] = Reflect.getMetadata(
-      VECTOR_META_COLUMN_METADATA_KEY,
+      VECTOR_META_COLUMN_REFLECT_KEY,
       trackingEntity.prototype,
     );
     const metadataColumnOptions: { [key: string]: VectorMetaColumnOptions } =
       {};
-    trackingColumnNames.forEach((columnName) => {
-      trackingColumnOptions[columnName] = Reflect.getMetadata(
-        VECTOR_METADATA_KEY,
+    metadataColumnNames?.forEach((columnName) => {
+      metadataColumnOptions[columnName] = Reflect.getMetadata(
+        VECTOR_META_COLUMN_METADATA_KEY,
         trackingEntity.prototype,
         columnName,
       );
@@ -144,10 +145,13 @@ export class TypeormVectorStoreModule {
       return pageLines.join(' ');
     };
 
-    const buildDocumentMetadataWithEntity = (entity: any) => {
+    const buildMetadataWithEntity = (entity: any) => {
       const result = { id: entity.id };
       metadataColumnNames?.forEach((columnName) => {
-        result[columnName] = entity[columnName];
+        const options = metadataColumnOptions[columnName];
+        result[columnName] = options?.transform
+          ? options.transform(entity[columnName])
+          : entity[columnName];
       });
       return result;
     };
@@ -155,7 +159,7 @@ export class TypeormVectorStoreModule {
     const buildDocumentWithEntity = (entity: any) => {
       return {
         pageContent: buildPageContentWithEntity(entity),
-        metadata: buildDocumentMetadataWithEntity(entity),
+        metadata: buildMetadataWithEntity(entity),
       };
     };
 
