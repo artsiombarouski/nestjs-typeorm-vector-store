@@ -103,6 +103,9 @@ export class TypeOrmVectorStore extends VectorStore {
   }
 
   async upsertDocuments(documents: Document[]): Promise<void> {
+    if (!documents || documents.length === 0) {
+      return;
+    }
     let result = documents;
 
     const where = documents

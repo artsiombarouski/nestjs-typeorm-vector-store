@@ -19,7 +19,7 @@ import {
 import { FakeEmbeddings } from 'langchain/embeddings/fake';
 import { Test, TestingModule } from '@nestjs/testing';
 
-@Entity()
+@Entity({ name: 'test_entity' })
 class TestEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -48,7 +48,7 @@ class TestEntity {
   optionalTransform: object;
 }
 
-@Entity()
+@Entity({ name: 'relation_entity' })
 class RelationEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -113,6 +113,7 @@ class TestEntityWithTransform {
     ]),
     TypeormVectorStoreModule.forFeature('test_entity_vectors', {
       trackingEntity: TestEntity,
+      autoMigration: true,
     }),
     TypeormVectorStoreModule.forFeature('test_entity_with_transform_vectors', {
       trackingEntity: TestEntityWithTransform,

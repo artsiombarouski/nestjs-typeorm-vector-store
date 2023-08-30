@@ -14,7 +14,6 @@ import {
   EventSubscriber,
   InsertEvent,
   Raw,
-  Repository,
   UpdateEvent,
 } from 'typeorm';
 import {
@@ -23,7 +22,7 @@ import {
   VECTOR_META_COLUMN_METADATA_KEY,
   VECTOR_META_COLUMN_REFLECT_KEY,
 } from './constants';
-import { getDataSourceToken, InjectRepository } from '@nestjs/typeorm';
+import { getDataSourceToken } from '@nestjs/typeorm';
 import { TypeOrmVectorStore } from './typeorm-vector-store';
 import { EmbeddingColumnOptions } from './decorators/embedding-column.decorator';
 import { InjectVectorStore } from './decorators/inject-vector-store.decorator';
@@ -145,8 +144,13 @@ export class TypeormVectorStoreModule {
       return pageLines.join(' ');
     };
 
-    const buildMetadataWithEntity = (entity: any) => {
-      const result = { id: entity.id };
+    const buildMetadataWithEntity = (
+      store: TypeOrmVectorStore,
+      entity: any,
+    ) => {
+      const result = {
+        [store.documentPrimaryKey]: entity[store.documentPrimaryKey],
+      };
       metadataColumnNames?.forEach((columnName) => {
         const options = metadataColumnOptions[columnName];
         result[columnName] = options?.transform
@@ -156,14 +160,21 @@ export class TypeormVectorStoreModule {
       return result;
     };
 
-    const buildDocumentWithEntity = (entity: any) => {
+    const buildDocumentWithEntity = (
+      store: TypeOrmVectorStore,
+      entity: any,
+    ) => {
       return {
         pageContent: buildPageContentWithEntity(entity),
-        metadata: buildMetadataWithEntity(entity),
+        metadata: buildMetadataWithEntity(store, entity),
       };
     };
 
-    const buildDocument = async (manager: EntityManager, entityId: any) => {
+    const buildDocument = async (
+      store: TypeOrmVectorStore,
+      manager: EntityManager,
+      entityId: any,
+    ) => {
       const entity = await manager.findOne(trackingEntity, {
         where: { id: entityId },
         relations: manager
@@ -173,7 +184,7 @@ export class TypeormVectorStoreModule {
           )
           .map((e) => e.propertyName),
       });
-      return buildDocumentWithEntity(entity);
+      return buildDocumentWithEntity(store, entity);
     };
 
     @EventSubscriber()
@@ -196,7 +207,11 @@ export class TypeormVectorStoreModule {
         });
         if (haveTrackingColumn) {
           await this.vectorStore.upsertDocuments([
-            await buildDocument(event.manager, event.entity.id),
+            await buildDocument(
+              this.vectorStore,
+              event.manager,
+              event.entity.id,
+            ),
           ]);
         }
       }
@@ -213,11 +228,19 @@ export class TypeormVectorStoreModule {
         });
         if (haveTrackingColumns) {
           await this.vectorStore.upsertDocuments([
-            await buildDocument(event.manager, event.databaseEntity.id),
+            await buildDocument(
+              this.vectorStore,
+              event.manager,
+              event.databaseEntity.id,
+            ),
           ]);
         } else if (haveMetadataColumns) {
           await this.vectorStore.upsertDocuments([
-            await buildDocument(event.manager, event.databaseEntity.id),
+            await buildDocument(
+              this.vectorStore,
+              event.manager,
+              event.databaseEntity.id,
+            ),
           ]);
         }
       }
@@ -234,18 +257,22 @@ export class TypeormVectorStoreModule {
       @Injectable()
       class MigrationService implements OnModuleInit {
         constructor(
-          @InjectRepository(trackingEntity)
-          readonly repo: Repository<any>,
+          readonly dataSource: DataSource,
           @InjectVectorStore(tableName)
           readonly vector: TypeOrmVectorStore,
         ) {}
 
-        onModuleInit(): any {
+        get repo() {
+          return this.dataSource.getRepository(trackingEntity);
+        }
+
+        onModuleInit() {
           this.repo
             .find({
               where: {
                 id: Raw(
-                  `SELECT metadata->>'id' as id FROM ${this.vector.tableName}`,
+                  () =>
+                    `"${this.repo.metadata.targetName}"."${this.vector.documentPrimaryKey}"::text IN (SELECT metadata->>'${this.vector.documentPrimaryKey}' as id FROM ${this.vector.tableName})`,
                 ),
               },
               relations: this.repo.metadata.relations
@@ -253,10 +280,9 @@ export class TypeormVectorStoreModule {
                 .map((e) => e.propertyName),
             })
             .then(async (results) => {
-              const documents = results.map((entity) => ({
-                pageContent: buildPageContentWithEntity(entity),
-                metadata: { id: entity.id },
-              }));
+              const documents = results.map((entity) =>
+                buildDocumentWithEntity(this.vector, entity),
+              );
               await this.vector.upsertDocuments(documents);
             });
         }
