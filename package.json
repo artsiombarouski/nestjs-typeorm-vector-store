@@ -1,6 +1,6 @@
 {
   "name": "@artsiombarouski/nestjs-typeorm-vector-store",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Vector Store wrapper for nestjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,7 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "langchain": "^0.0.127"
+    "langchain": "^0.0.203"
   },
   "peerDependencies": {
     "@nestjs/core": "9.4.3",

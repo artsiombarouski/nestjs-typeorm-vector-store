@@ -1,8 +1,8 @@
 version: "3"
 services:
-  felt_therapy_test_database:
+  nest_js_vector_test_database:
     image: ankane/pgvector
-    container_name: 'vector_store_test_database'
+    container_name: 'nest_js_vector_test_database'
     restart: always
     ports:
       - '5432:5432'
