@@ -1,6 +1,6 @@
 {
   "name": "@artsiombarouski/nestjs-typeorm-vector-store",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "Vector Store wrapper for nestjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,37 +17,39 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "langchain": "^0.0.203"
+    "@langchain/core": "^0.3.32",
+    "@langchain/openai": "^0.3.17"
   },
   "peerDependencies": {
-    "@nestjs/core": "9.4.3",
     "@nestjs/common": "9.4.3",
+    "@nestjs/core": "9.4.3",
     "@nestjs/typeorm": "9.0.1",
-    "typeorm": "0.3.16",
-    "rxjs": "^7.8.1",
+    "lodash": "^4.17.21",
     "reflect-metadata": "^0.1.13",
-    "lodash": "^4.17.21"
+    "rxjs": "^7.8.1",
+    "typeorm": "0.3.16"
   },
   "devDependencies": {
-    "@nestjs/core": "9.4.3",
-    "@nestjs/common": "9.4.3",
-    "@nestjs/typeorm": "9.0.1",
-    "@nestjs/platform-express": "9.4.3",
-    "typeorm": "0.3.16",
     "@nestjs/cli": "^9.5.0",
+    "@nestjs/common": "9.4.3",
+    "@nestjs/core": "9.4.3",
+    "@nestjs/platform-express": "9.4.3",
     "@nestjs/schematics": "^9.2.0",
     "@nestjs/testing": "^9.4.2",
-    "rimraf": "^5.0.1",
-    "typescript": "^4.3.5",
+    "@nestjs/typeorm": "9.0.1",
     "@types/jest": "27.5.0",
+    "@types/lodash": "^4.17.14",
     "@types/node": "^16.0.0",
     "jest": "28.0.3",
+    "pg": "^8.11.2",
     "prettier": "^2.3.2",
+    "rimraf": "^5.0.1",
     "supertest": "^6.1.3",
     "ts-jest": "28.0.1",
     "ts-loader": "^9.2.3",
     "ts-node": "^10.0.0",
-    "pg": "^8.11.2"
+    "typeorm": "0.3.16",
+    "typescript": "^4.3.5"
   },
   "jest": {
     "moduleFileExtensions": [

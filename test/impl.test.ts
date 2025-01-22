@@ -16,8 +16,8 @@ import {
   TypeormVectorStoreModule,
   VectorMetaColumn,
 } from '../src';
-import { FakeEmbeddings } from 'langchain/embeddings/fake';
 import { Test, TestingModule } from '@nestjs/testing';
+import { FakeEmbeddings } from '@langchain/core/utils/testing';
 
 @Entity({ name: 'test_entity' })
 class TestEntity {
@@ -156,6 +156,7 @@ describe('TypeOrmVectorStore impl', () => {
       username: 'postgres_test',
       password: 'postgres_test',
       logging: false,
+      dropSchema: true,
     });
     await dataSource.initialize();
     await dataSource.dropDatabase();
@@ -179,7 +180,7 @@ describe('TypeOrmVectorStore impl', () => {
     const repo: Repository<TestEntity> = await moduleRef.get(
       getRepositoryToken(TestEntity),
     );
-    const store = await moduleRef.get<TypeOrmVectorStore>(
+    const store = moduleRef.get<TypeOrmVectorStore>(
       `vector_store_test_entity_vectors`,
     );
     // Creating one
@@ -273,7 +274,7 @@ describe('TypeOrmVectorStore impl', () => {
     const repo: Repository<TestEntityWithTransform> = await moduleRef.get(
       getRepositoryToken(TestEntityWithTransform),
     );
-    const store = await moduleRef.get<TypeOrmVectorStore>(
+    const store = moduleRef.get<TypeOrmVectorStore>(
       `vector_store_test_entity_with_transform_vectors`,
     );
     // Creating one

@@ -1,5 +1,5 @@
-import { Embeddings } from 'langchain/embeddings/base';
 import { TypeOrmVectorStoreOptions } from '../typeorm-vector-store';
+import { Embeddings } from '@langchain/core/embeddings';
 
 export type TypeormVectorStoreModuleOptions = {
   embedding: Embeddings;

@@ -1,15 +1,14 @@
 version: "3"
 services:
   nest_js_vector_test_database:
-    image: ankane/pgvector
-    container_name: 'nest_js_vector_test_database'
+    image: pgvector/pgvector:0.8.0-pg17
     restart: always
     ports:
       - '5432:5432'
     environment:
+      - POSTGRES_DB=postgres_test
       - POSTGRES_USER=postgres_test
       - POSTGRES_PASSWORD=postgres_test
-      - POSTGRES_DB=postgres_test
     volumes:
       - ./postgres-test:/var/lib/postgresql/data
     networks:

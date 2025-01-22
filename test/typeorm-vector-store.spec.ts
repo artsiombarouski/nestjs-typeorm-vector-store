@@ -1,6 +1,5 @@
-// @ts-ignore
-import { FakeEmbeddings } from 'langchain/embeddings/fake';
 import { TypeOrmVectorDocumentDto, TypeOrmVectorStore } from '../src';
+import { FakeEmbeddings } from '@langchain/core/utils/testing';
 
 describe('TypeOrmVectorStore', () => {
   let store: TypeOrmVectorStore | undefined;

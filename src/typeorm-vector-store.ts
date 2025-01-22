@@ -1,8 +1,8 @@
-import { VectorStore } from 'langchain/vectorstores/base';
-import { Embeddings } from 'langchain/embeddings/base';
-import { Document } from 'langchain/document';
 import { DataSource, DataSourceOptions, EntitySchema } from 'typeorm';
 import { isEqual, isMatch } from 'lodash';
+import { VectorStore } from '@langchain/core/vectorstores';
+import { Document } from '@langchain/core/documents';
+import { Embeddings } from '@langchain/core/embeddings';
 
 export type TypeOrmVectorFilterType = { [key: string]: any };
 
@@ -259,13 +259,21 @@ export class TypeOrmVectorStore extends VectorStore {
     await this.dataSource.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
 
     await this.dataSource.query(`
-      CREATE TABLE IF NOT EXISTS ${this.tableName} (
-        "id" uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
-        "version" integer,
-        "pageContent" text,
-        metadata jsonb,
-        embedding vector
-      );
+        CREATE TABLE IF NOT EXISTS ${this.tableName}
+        (
+            "id"
+            uuid
+            NOT
+            NULL
+            DEFAULT
+            uuid_generate_v4
+        (
+        ) PRIMARY KEY,
+            "version" integer,
+            "pageContent" text,
+            metadata jsonb,
+            embedding vector
+            );
     `);
   }
 }
